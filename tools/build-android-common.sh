@@ -19,7 +19,7 @@ source ./build-common.sh
 export PLATFORM_TYPE="Android"
 export ARCHS=("arm" "arm64" "x86" "x86_64")
 export ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-export ABI_TRIPLES=("arm-linux-androideabi" "aarch64-linux-android" "i686-linux-android" "x86_64-linux-android")
+export ABI_TRIPLES=("armv7a-linux-androideabi" "aarch64-linux-android" "i686-linux-android" "x86_64-linux-android")
 export ANDROID_API=23
 
 # for test
@@ -32,10 +32,10 @@ if [[ -z ${ANDROID_NDK_ROOT} ]]; then
   exit 1
 fi
 
-if [[ -z ${ANDROID_HOME} ]]; then
-  echo "ANDROID_HOME not defined"
-  exit 1
-fi
+#if [[ -z ${ANDROID_HOME} ]]; then
+#  echo "ANDROID_HOME not defined"
+#  exit 1
+#fi
 
 function get_toolchain() {
   HOST_OS=$(uname -s)
@@ -154,10 +154,16 @@ function set_android_toolchain() {
   export STRIP=${build_host}-strip
 }
 
+function get_common_abi_cflags() {
+# discard -fno-integrated-as
+  echo "-funwind-tables -no-canonical-prefixes"
+}
+
 function get_common_includes() {
   local toolchain=$(get_toolchain)
   echo "-I${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/${toolchain}/sysroot/usr/include -I${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/${toolchain}/sysroot/usr/local/include"
 }
+
 function get_common_linked_libraries() {
   local api=$1
   local arch=$2
@@ -172,25 +178,50 @@ function set_android_cpu_feature() {
   local api=$3
   case ${arch} in
   arm-v7a | arm-v7a-neon)
-    export CFLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp -Wno-unused-function -fno-integrated-as -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_includes)"
+# string(APPEND _ANDROID_ABI_INIT_CFLAGS
+#  " -march=armv7-a"
+#  )
+#
+#if(CMAKE_ANDROID_ARM_MODE)
+#  string(APPEND _ANDROID_ABI_INIT_CFLAGS " -marm")
+#else()
+#  string(APPEND _ANDROID_ABI_INIT_CFLAGS " -mthumb")
+#endif()
+#
+#if(CMAKE_ANDROID_ARM_NEON)
+#  string(APPEND _ANDROID_ABI_INIT_CFLAGS " -mfpu=neon")
+#else()
+#  string(APPEND _ANDROID_ABI_INIT_CFLAGS " -mfpu=vfpv3-d16")
+#endif()
+#
+#string(APPEND _ANDROID_ABI_INIT_LDFLAGS
+#  " -Wl,--fix-cortex-a8"
+#  )
+#
+#string(APPEND _ANDROID_ABI_INIT_CFLAGS
+#  " -mfloat-abi=softfp"
+#  )
+#
+#include(Platform/Android/abi-common-Clang)
+    export CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mthumb -fno-integrated-as -Wno-unused-function -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_abi_cflags) $(get_common_includes)"
     export CXXFLAGS="-std=c++14 -Os -ffunction-sections -fdata-sections"
-    export LDFLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp -Wl,--fix-cortex-a8 -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
+    export LDFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mthumb -Wl,--fix-cortex-a8 -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
     export CPPFLAGS=${CFLAGS}
     ;;
   arm64-v8a)
-    export CFLAGS="-march=armv8-a -Wno-unused-function -fno-integrated-as -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_includes)"
+    export CFLAGS="-march=armv8-a -mtune=generic -Wno-unused-function -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_abi_cflags) $(get_common_includes)"
     export CXXFLAGS="-std=c++14 -Os -ffunction-sections -fdata-sections"
     export LDFLAGS="-march=armv8-a -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
     export CPPFLAGS=${CFLAGS}
     ;;
   x86)
-    export CFLAGS="-march=i686 -mtune=intel -mssse3 -mfpmath=sse -m32 -Wno-unused-function -fno-integrated-as -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_includes)"
+    export CFLAGS="-march=i686 -m32 -mtune=intel -mssse3 -mfpmath=sse -Wno-unused-function -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_abi_cflags) $(get_common_includes)"
     export CXXFLAGS="-std=c++14 -Os -ffunction-sections -fdata-sections"
     export LDFLAGS="-march=i686 -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
     export CPPFLAGS=${CFLAGS}
     ;;
   x86-64)
-    export CFLAGS="-march=x86-64 -msse4.2 -mpopcnt -m64 -mtune=intel -Wno-unused-function -fno-integrated-as -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_includes)"
+    export CFLAGS="-march=x86-64 -m64 -msse4.2 -mpopcnt -mtune=intel -Wno-unused-function -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_abi_cflags) $(get_common_includes)"
     export CXXFLAGS="-std=c++14 -Os -ffunction-sections -fdata-sections"
     export LDFLAGS="-march=x86-64 -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
     export CPPFLAGS=${CFLAGS}
