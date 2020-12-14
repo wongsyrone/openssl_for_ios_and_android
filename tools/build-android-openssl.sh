@@ -21,7 +21,7 @@ set -u
 source ./build-android-common.sh
 
 if [ -z ${version+x} ]; then 
-  version="1.1.1d"
+  version="1.1.1i"
 fi
 
 init_log_color
@@ -49,8 +49,8 @@ echo "https://www.openssl.org/source/${LIB_NAME}.tar.gz"
 
 # https://github.com/openssl/openssl/archive/OpenSSL_1_1_1d.tar.gz
 # https://github.com/openssl/openssl/archive/OpenSSL_1_1_1f.tar.gz
-DEVELOPER=$(xcode-select -print-path)
-SDK_VERSION=$(xcrun -sdk iphoneos --show-sdk-version)
+#DEVELOPER=$(xcode-select -print-path)
+#SDK_VERSION=$(xcrun -sdk iphoneos --show-sdk-version)
 rm -rf "${LIB_DEST_DIR}" "${LIB_NAME}"
 [ -f "${LIB_NAME}.tar.gz" ] || curl https://www.openssl.org/source/${LIB_NAME}.tar.gz >${LIB_NAME}.tar.gz
 
@@ -90,19 +90,19 @@ function configure_make() {
 
     if [[ "${ARCH}" == "x86_64" ]]; then
 
-        ./Configure android-x86_64 --prefix="${PREFIX_DIR}"
+        ./Configure android-x86_64 --prefix="${PREFIX_DIR}" no-shared
 
     elif [[ "${ARCH}" == "x86" ]]; then
 
-        ./Configure android-x86 --prefix="${PREFIX_DIR}"
+        ./Configure android-x86 --prefix="${PREFIX_DIR}" no-shared
 
     elif [[ "${ARCH}" == "arm" ]]; then
 
-        ./Configure android-arm --prefix="${PREFIX_DIR}"
+        ./Configure android-arm --prefix="${PREFIX_DIR}" no-shared
 
     elif [[ "${ARCH}" == "arm64" ]]; then
 
-        ./Configure android-arm64 --prefix="${PREFIX_DIR}"
+        ./Configure android-arm64 --prefix="${PREFIX_DIR}" no-shared
 
     else
         log_error "not support" && exit 1
