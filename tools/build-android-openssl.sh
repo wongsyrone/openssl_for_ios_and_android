@@ -21,7 +21,7 @@ set -u
 source ./build-android-common.sh
 
 if [ -z ${version+x} ]; then 
-  version="1.1.1d"
+  version="1.1.1i"
 fi
 
 init_log_color
@@ -49,8 +49,8 @@ echo "https://www.openssl.org/source/${LIB_NAME}.tar.gz"
 
 # https://github.com/openssl/openssl/archive/OpenSSL_1_1_1d.tar.gz
 # https://github.com/openssl/openssl/archive/OpenSSL_1_1_1f.tar.gz
-DEVELOPER=$(xcode-select -print-path)
-SDK_VERSION=$(xcrun -sdk iphoneos --show-sdk-version)
+#DEVELOPER=$(xcode-select -print-path)
+#SDK_VERSION=$(xcrun -sdk iphoneos --show-sdk-version)
 rm -rf "${LIB_DEST_DIR}" "${LIB_NAME}"
 [ -f "${LIB_NAME}.tar.gz" ] || curl https://www.openssl.org/source/${LIB_NAME}.tar.gz >${LIB_NAME}.tar.gz
 
@@ -70,6 +70,7 @@ function configure_make() {
     tar xfz "${LIB_NAME}.tar.gz"
     pushd .
     cd "${LIB_NAME}"
+    patch -p1 < ${TOOLS_ROOT}/ndk-r22.patch
 
     PREFIX_DIR="${pwd_path}/../output/android/openssl-${ABI}"
     if [ -d "${PREFIX_DIR}" ]; then
@@ -90,19 +91,19 @@ function configure_make() {
 
     if [[ "${ARCH}" == "x86_64" ]]; then
 
-        ./Configure android-x86_64 --prefix="${PREFIX_DIR}"
+        ./Configure android-x86_64 --prefix="${PREFIX_DIR}" no-shared
 
     elif [[ "${ARCH}" == "x86" ]]; then
 
-        ./Configure android-x86 --prefix="${PREFIX_DIR}"
+        ./Configure android-x86 --prefix="${PREFIX_DIR}" no-shared
 
     elif [[ "${ARCH}" == "arm" ]]; then
 
-        ./Configure android-arm --prefix="${PREFIX_DIR}"
+        ./Configure android-arm --prefix="${PREFIX_DIR}" -D__ARM_MAX_ARCH__=8  no-shared
 
     elif [[ "${ARCH}" == "arm64" ]]; then
 
-        ./Configure android-arm64 --prefix="${PREFIX_DIR}"
+        ./Configure android-arm64 --prefix="${PREFIX_DIR}" no-shared
 
     else
         log_error "not support" && exit 1
@@ -111,10 +112,7 @@ function configure_make() {
     log_info "make $ABI start..."
 
     make clean >"${OUTPUT_ROOT}/log/${ABI}.log"
-    if make -j$(get_cpu_count) >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1; then
-        make install_sw >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1
-        make install_ssldirs >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1
-    fi
+    make -j$(get_cpu_count) install_dev install_engines >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1
 
     popd
 }
