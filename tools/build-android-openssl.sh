@@ -70,6 +70,7 @@ function configure_make() {
     tar xfz "${LIB_NAME}.tar.gz"
     pushd .
     cd "${LIB_NAME}"
+    patch -p1 < ${TOOLS_ROOT}/ndk-r22.patch
 
     PREFIX_DIR="${pwd_path}/../output/android/openssl-${ABI}"
     if [ -d "${PREFIX_DIR}" ]; then
@@ -98,7 +99,7 @@ function configure_make() {
 
     elif [[ "${ARCH}" == "arm" ]]; then
 
-        ./Configure android-arm --prefix="${PREFIX_DIR}" no-shared
+        ./Configure android-arm --prefix="${PREFIX_DIR}" -D__ARM_MAX_ARCH__=8  no-shared
 
     elif [[ "${ARCH}" == "arm64" ]]; then
 
@@ -111,10 +112,7 @@ function configure_make() {
     log_info "make $ABI start..."
 
     make clean >"${OUTPUT_ROOT}/log/${ABI}.log"
-    if make -j$(get_cpu_count) >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1; then
-        make install_sw >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1
-        make install_ssldirs >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1
-    fi
+    make -j$(get_cpu_count) install_dev install_engines >>"${OUTPUT_ROOT}/log/${ABI}.log" 2>&1
 
     popd
 }

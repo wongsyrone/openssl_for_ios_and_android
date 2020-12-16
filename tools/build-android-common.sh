@@ -211,9 +211,9 @@ function set_android_cpu_feature() {
 #  )
 #
 #include(Platform/Android/abi-common-Clang)
-    export CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mthumb -fno-integrated-as -Wno-unused-function -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_abi_cflags) $(get_common_includes)"
+    export CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -marm -Wno-unused-function -fstrict-aliasing -fPIC -DANDROID -D__ANDROID_API__=${api} -Os -ffunction-sections -fdata-sections $(get_common_abi_cflags) $(get_common_includes)"
     export CXXFLAGS="-std=c++14 -Os -ffunction-sections -fdata-sections"
-    export LDFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mthumb -Wl,--fix-cortex-a8 -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
+    export LDFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -marm -Wl,--fix-cortex-a8 -Wl,--gc-sections -Os -ffunction-sections -fdata-sections $(get_common_linked_libraries ${api} ${arch})"
     export CPPFLAGS=${CFLAGS}
     ;;
   arm64-v8a)
